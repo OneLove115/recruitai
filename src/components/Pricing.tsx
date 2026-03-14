@@ -30,9 +30,9 @@ const enterpriseFeatures = [
 export default function Pricing() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
 
-  const monthlyPrice = 79;
-  const yearlyPrice = 758;
-  const yearlySavings = monthlyPrice * 12 - yearlyPrice;
+  const monthlyPrice = 199.99;
+  const yearlyPrice = 1919.90; // 20% discount: 2399.88 * 0.8
+  const yearlySavings = (monthlyPrice * 12) - yearlyPrice; // ~€480 savings
 
   return (
     <section id="pricing" className="py-24 lg:py-32 bg-slate-50">
@@ -87,7 +87,7 @@ export default function Pricing() {
           >
             Yearly
             <span className="inline-flex items-center bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
-              Save ${yearlySavings}
+              Save 20%
             </span>
           </span>
         </div>
@@ -112,7 +112,7 @@ export default function Pricing() {
             {/* Price */}
             <div className="mb-6">
               <div className="flex items-end gap-1">
-                <span className="text-2xl font-bold text-slate-500">$</span>
+                <span className="text-2xl font-bold text-slate-500">€</span>
                 <span className="text-5xl font-black text-slate-900">
                   {billing === "monthly" ? monthlyPrice : Math.round(yearlyPrice / 12)}
                 </span>
@@ -120,12 +120,12 @@ export default function Pricing() {
               </div>
               {billing === "yearly" && (
                 <p className="text-sm text-emerald-600 font-medium mt-1">
-                  Billed ${yearlyPrice}/year · Save ${yearlySavings} vs monthly
+                  Billed €{yearlyPrice.toFixed(2)}/year · Save €{yearlySavings.toFixed(2)} vs monthly
                 </p>
               )}
               {billing === "monthly" && (
                 <p className="text-sm text-slate-400 mt-1">
-                  Billed ${monthlyPrice}/month per recruiter
+                  Billed €{monthlyPrice}/month per recruiter
                 </p>
               )}
             </div>
