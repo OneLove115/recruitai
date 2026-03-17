@@ -1,13 +1,13 @@
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import TrustedBy from "@/components/TrustedBy";
-import Features from "@/components/Features";
-import HowItWorks from "@/components/HowItWorks";
-import Testimonials from "@/components/Testimonials";
-import Pricing from "@/components/Pricing";
-import FAQ from "@/components/FAQ";
-import CTA from "@/components/CTA";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/home/Navbar";
+import Hero from "@/components/home/Hero";
+import TrustedBy from "@/components/home/TrustedBy";
+import Features from "@/components/home/Features";
+import HowItWorks from "@/components/home/HowItWorks";
+import Testimonials from "@/components/home/Testimonials";
+import Pricing from "@/components/home/Pricing";
+import FAQ from "@/components/home/FAQ";
+import FinalCTA from "@/components/home/FinalCTA";
+import Footer from "@/components/home/Footer";
 
 export default function HomePage() {
   return (
@@ -20,7 +20,7 @@ export default function HomePage() {
       <Testimonials />
       <Pricing />
       <FAQ />
-      <CTA />
+      <FinalCTA />
       <Footer />
     </main>
   );
