@@ -128,6 +128,25 @@ export default function JobForm({ action, initialData }: { action: ActionFn; ini
         />
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          Hidden Criteria
+          <span className="ml-2 text-xs text-slate-400 font-normal">(private — candidates can&apos;t see these)</span>
+        </label>
+        <p className="text-xs text-slate-500 mb-2">One criterion per line. The AI uses these for scoring but they won&apos;t appear on the job listing.</p>
+        <textarea
+          name="hidden_criteria_text"
+          defaultValue={
+            initialData && (initialData as any).hidden_criteria
+              ? ((initialData as any).hidden_criteria as string[]).join("\n")
+              : ""
+          }
+          rows={3}
+          placeholder={"e.g.\nMust have startup experience\nPrefer someone who can start within 2 weeks\nNo agency contractors"}
+          className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+        />
+      </div>
+
       {initialData && (
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
