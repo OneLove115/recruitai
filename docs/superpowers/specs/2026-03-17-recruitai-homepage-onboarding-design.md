@@ -143,9 +143,15 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - `bg-slate-50`, `py-24`
 - Section label: "AI SCORING"
 - Heading: "Watch AI rank 127 CVs in 4 seconds"
-- Animated demo: staggered candidate cards appearing with scores, progress bars filling in
+- Animated demo: 5 candidate cards stagger-appear with scores, progress bars fill in left-to-right
+- Mock candidate data (hardcoded, consistent with hero preview):
+  1. Sarah Chen · Ex-Google · 8yr · Score: **97**
+  2. Marcus Reid · Ex-Meta · 6yr · Score: **91**
+  3. Priya Sharma · Ex-Stripe · 5yr · Score: **88**
+  4. James Liu · Ex-Airbnb · 4yr · Score: **83**
+  5. Ana Martinez · Ex-Shopify · 3yr · Score: **76**
 - Subtext: "Hidden criteria means candidates can't reverse-engineer your scoring. Fair, consistent, defensible."
-- Implementation: CSS animation on scroll-enter, no external libraries needed
+- Implementation: `IntersectionObserver` triggers CSS `animation-delay` stagger (same pattern as scroll animations in §6). No external libraries. confetti on completion screen: use `canvas-confetti` npm package (~3KB gzipped) — pure CSS confetti is not reliable cross-browser
 
 ### 2.8 Testimonials
 - `bg-white`, `py-24`
@@ -162,12 +168,6 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - Agency card: highlighted with indigo border + "Most Popular" badge
 - Both: amber "Start Free Trial" CTA, "No credit card required" note
 - Annual savings callout per card: Starter "Save €198/year" · Agency "Save ~€401/year"
-
-### 2.10 FinalCTA
-- Dark gradient matching hero, `py-24`
-- Heading: "Ready to hire smarter?"
-- Subtext: "Join 2,400+ recruitment agencies already using RecruitAI"
-- Single amber CTA button
 
 ### 2.10 FAQ
 - `bg-white`, `py-24`
@@ -191,10 +191,11 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 ## 3. Auth Pages
 
 ### Layout (all auth pages)
-- Full-screen dark gradient background (matches hero: `#0f0c29` → `#302b63`)
-- Centered card: `bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[420px]`
+- Shared via `src/app/(auth)/layout.tsx` — create this file (does not currently exist)
+- Layout renders: full-screen dark gradient background (`#0f0c29` → `#302b63`), centered flex container
+- Each page renders its own card: `bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[420px]`
 - Logo at top of card
-- "Back to home" link top-left (outside card)
+- "Back to home" link top-left (outside card, absolute positioned)
 
 ### 3.1 Signup (`/signup`)
 **Fields:**
@@ -273,6 +274,7 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - Role selector per invite: Admin / Recruiter / Viewer
 - "Skip for now" link
 - CTA: "Finish setup →"
+- Persistence: invites sent via `supabase.auth.admin.inviteUserByEmail()` on wizard completion; no separate `team_invites` table needed — Supabase manages pending invite state internally
 
 ### Completion Screen
 - Full-screen animated confetti (lightweight CSS only)
@@ -302,7 +304,7 @@ src/components/
     Testimonials.tsx    # restyle existing
     Pricing.tsx         # restyle existing — monthly/annual toggle state
     FAQ.tsx             # restyle existing — accordion with chevron rotation
-    FinalCTA.tsx        # rename from CTA.tsx — delete CTA.tsx, update page.tsx import
+    FinalCTA.tsx        # git mv src/components/CTA.tsx src/components/home/FinalCTA.tsx — update page.tsx import
     Footer.tsx          # restyle existing
 
 src/app/
@@ -318,8 +320,9 @@ src/app/
 ```
 
 ### Move existing components
-- Current `src/components/*.tsx` → `src/components/home/*.tsx`
-- Update `src/app/page.tsx` imports accordingly
+- Use `git mv` for each file to preserve history: `git mv src/components/Hero.tsx src/components/home/Hero.tsx` (repeat for each)
+- Update `src/app/page.tsx` imports after all moves
+- TrustedBy logos: render as grey `rounded-lg bg-slate-200` placeholder blocks with company-name text until real brand assets are provided
 
 ---
 
@@ -336,7 +339,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-body', weight: ['400
 - Signup → `supabase.auth.signUp()` → redirect to `/verify-email` (pass email in URL param or session storage)
 - Email OTP verify → `supabase.auth.verifyOtp({ email, token, type: 'signup' })` → redirect to `/onboarding`
 - Login → `supabase.auth.signInWithPassword()` → redirect to `/dashboard`
-- Password recovery → `supabase.auth.resetPasswordForEmail()` → email OTP → `/reset-password`
+- Password recovery → `supabase.auth.resetPasswordForEmail()` → magic link in email → `/reset-password` (extract token from URL hash)
 - Supabase project settings: disable magic link, enable OTP; set OTP expiry to 600s (10 min)
 
 ### Onboarding data persistence
