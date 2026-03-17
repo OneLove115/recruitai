@@ -1,6 +1,6 @@
 "use client";
 import { updateCandidateStage, deleteCandidate } from "@/app/actions/candidates";
-import { Mail, Phone, Linkedin, Briefcase, Star, FileText, Trash2 } from "lucide-react";
+import { Mail, Phone, Linkedin, Briefcase, Star, FileText, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 const STAGES = ["new", "screening", "interview", "offer", "hired", "rejected"] as const;
@@ -26,12 +26,36 @@ type Candidate = {
   ai_score?: number | null;
   notes?: string | null;
   created_at: string;
+  job_id?: string | null;
   jobs?: { title: string } | null;
 };
 
 export default function CandidateDetail({ candidate }: { candidate: Candidate }) {
   const [stage, setStage] = useState(candidate.stage as Stage);
   const [updating, setUpdating] = useState(false);
+  const [scoring, setScoring] = useState(false);
+  const [scoreResult, setScoreResult] = useState<{ score: number; reasoning: string; strengths: string[]; gaps: string[] } | null>(null);
+  const [currentScore, setCurrentScore] = useState(candidate.ai_score ?? null);
+
+  const handleScore = async () => {
+    setScoring(true);
+    try {
+      const res = await fetch("/api/score-candidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId: candidate.id, jobId: candidate.job_id ?? null }),
+      });
+      const data = await res.json();
+      if (data.score != null) {
+        setCurrentScore(data.score);
+        setScoreResult(data);
+      }
+    } catch (err) {
+      console.error("Scoring failed:", err);
+    } finally {
+      setScoring(false);
+    }
+  };
 
   const handleStageChange = async (newStage: Stage) => {
     setUpdating(true);
@@ -63,12 +87,22 @@ export default function CandidateDetail({ candidate }: { candidate: Candidate })
               )}
             </div>
           </div>
-          {candidate.ai_score != null && (
-            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              <Star className="w-4 h-4 fill-amber-400 stroke-amber-400" />
-              <span className="font-bold text-amber-700">{candidate.ai_score}/100</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {currentScore != null && (
+              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <Star className="w-4 h-4 fill-amber-400 stroke-amber-400" />
+                <span className="font-bold text-amber-700">{currentScore}/100</span>
+              </div>
+            )}
+            <button
+              onClick={handleScore}
+              disabled={scoring || !candidate.cv_text}
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
+              {scoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {scoring ? "Scoring…" : "Score with AI"}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -88,6 +122,41 @@ export default function CandidateDetail({ candidate }: { candidate: Candidate })
           )}
         </div>
       </div>
+
+      {/* AI Score result */}
+      {scoreResult && (
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+              <span className="text-xl font-black text-amber-700">{scoreResult.score}</span>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">AI Score: {scoreResult.score}/100</p>
+              <p className="text-sm text-slate-600">{scoreResult.reasoning}</p>
+            </div>
+          </div>
+          {scoreResult.strengths?.length > 0 && (
+            <div className="mb-2">
+              <p className="text-xs font-semibold text-emerald-700 mb-1">Strengths</p>
+              <ul className="text-xs text-slate-600 space-y-0.5">
+                {scoreResult.strengths.map((s, i) => (
+                  <li key={i} className="flex gap-1.5"><span className="text-emerald-500">✓</span>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {scoreResult.gaps?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-red-600 mb-1">Gaps</p>
+              <ul className="text-xs text-slate-600 space-y-0.5">
+                {scoreResult.gaps.map((g, i) => (
+                  <li key={i} className="flex gap-1.5"><span className="text-red-400">✗</span>{g}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stage pipeline */}
       <div className="bg-white rounded-xl border border-slate-100 p-6">
