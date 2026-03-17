@@ -63,8 +63,9 @@
 7. AIScoringDemo *(new)*
 8. Testimonials
 9. Pricing
-10. FinalCTA
-11. Footer
+10. FAQ *(retained from existing `FAQ.tsx`, restyled to match dark/light pattern)*
+11. FinalCTA
+12. Footer
 
 ### 2.1 Navbar
 - Sticky, `backdrop-blur-md bg-white/5 border-b border-white/10` when over hero (dark)
@@ -168,7 +169,19 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - Subtext: "Join 2,400+ recruitment agencies already using RecruitAI"
 - Single amber CTA button
 
-### 2.11 Footer
+### 2.10 FAQ
+- `bg-white`, `py-24`
+- Retained from existing `FAQ.tsx` — restyle only (no content changes)
+- Accordion pattern: question rows expand on click, indigo chevron rotates
+- Max-width `768px` centered
+
+### 2.11 FinalCTA
+- Dark gradient matching hero, `py-24`
+- Heading: "Ready to hire smarter?"
+- Subtext: "Join 2,400+ recruitment agencies already using RecruitAI"
+- Single amber CTA button
+
+### 2.12 Footer
 - `bg-slate-950`, white/muted text
 - 4-col grid: Logo+tagline · Product links · Company links · Legal links
 - Bottom bar: copyright + social icons
@@ -217,8 +230,18 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - On submit: Supabase signInWithPassword → redirect to `/dashboard`
 
 ### 3.4 Password Recovery
-**Step 1** — `/forgot-password`: Email input → submit → "Check your inbox" confirmation page
-**Step 2** — `/reset-password`: New password + confirm (Supabase handles token via URL param)
+**Method: Supabase token-in-URL** (standard flow — distinct from email verification which uses OTP)
+
+**Step 1** — `/forgot-password`:
+- Email input → submit → `supabase.auth.resetPasswordForEmail(email, { redirectTo: '/reset-password' })`
+- Show confirmation card: "Check your inbox — we sent a reset link to {email}"
+- "Resend" link with 60s cooldown
+
+**Step 2** — `/reset-password`:
+- Supabase injects `access_token` + `type=recovery` into URL hash on arrival
+- Extract token, show new password + confirm password fields
+- Submit → `supabase.auth.updateUser({ password })` → redirect to `/dashboard`
+- Error states: expired link ("This link has expired — request a new one"), password mismatch inline validation
 
 ---
 
@@ -269,16 +292,17 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 ```
 src/components/
   home/
-    Navbar.tsx          # replace existing Navbar.tsx (scroll-aware)
+    Navbar.tsx          # replace existing Navbar.tsx — 'use client' for scroll-aware bg transition
     Hero.tsx            # full rewrite — dark premium
-    TrustedBy.tsx       # keep, restyle
+    TrustedBy.tsx       # restyle existing
     ProblemAgitation.tsx  # new
     Features.tsx        # restyle existing
     HowItWorks.tsx      # restyle existing
-    AIScoringDemo.tsx   # new
+    AIScoringDemo.tsx   # new — IntersectionObserver + CSS classes (same pattern as scroll animations)
     Testimonials.tsx    # restyle existing
-    Pricing.tsx         # restyle existing
-    FinalCTA.tsx        # restyle existing CTA.tsx
+    Pricing.tsx         # restyle existing — monthly/annual toggle state
+    FAQ.tsx             # restyle existing — accordion with chevron rotation
+    FinalCTA.tsx        # rename from CTA.tsx — delete CTA.tsx, update page.tsx import
     Footer.tsx          # restyle existing
 
 src/app/
@@ -316,9 +340,42 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-body', weight: ['400
 - Supabase project settings: disable magic link, enable OTP; set OTP expiry to 600s (10 min)
 
 ### Onboarding data persistence
-- Store wizard state in `localStorage` during wizard (no DB writes until finish)
-- On "Finish setup": write company profile to `profiles` table, create first job if provided, send team invites
-- Schema additions needed: `profiles` table (company_name, industry, team_size), `jobs` table
+- Store wizard state in `localStorage` (key: `recruitai_onboarding`) during wizard — no DB writes until finish
+- On revisit to `/onboarding` mid-flow: restore from `localStorage`, resume at last completed step
+- On revisit to `/onboarding` with no stored state: start from step 1
+- On "Finish setup": flush `localStorage`, write to DB atomically
+
+**Schema additions** (net-new tables — verify these don't exist before running migration):
+
+```sql
+-- profiles: one row per authenticated user (tenant)
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  company_name text not null,
+  industry text,
+  team_size text,  -- 'solo' | '2-5' | '6-20' | '20+'
+  created_at timestamptz default now()
+);
+alter table profiles enable row level security;
+create policy "Users can manage own profile"
+  on profiles for all using (auth.uid() = id);
+
+-- jobs: one row per job posting
+create table jobs (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references profiles(id) on delete cascade,
+  title text not null,
+  location text,
+  remote boolean default false,
+  employment_type text,  -- 'full-time' | 'part-time' | 'contract' | 'internship'
+  description text,
+  status text default 'active',  -- 'active' | 'paused' | 'closed'
+  created_at timestamptz default now()
+);
+alter table jobs enable row level security;
+create policy "Users can manage own jobs"
+  on jobs for all using (auth.uid() = owner_id);
+```
 
 ### Scroll animations
 - Use `IntersectionObserver` with CSS classes (`opacity-0 translate-y-4` → `opacity-100 translate-y-0`)
