@@ -1,9 +1,9 @@
-import { Brain, EyeOff, LayoutKanban, CalendarCheck, Smartphone, Users } from 'lucide-react'
+import { Brain, EyeOff, Kanban, CalendarCheck, Smartphone, Users } from 'lucide-react'
 
 const FEATURES = [
   { icon: Brain, title: 'AI CV Scoring', body: 'Ranks every applicant in seconds against your criteria. No bias, no fatigue.' },
   { icon: EyeOff, title: 'Hidden Criteria', body: "Private scoring factors candidates can't see or game." },
-  { icon: LayoutKanban, title: 'Pipeline Management', body: 'Drag candidates through stages with one click.' },
+  { icon: Kanban, title: 'Pipeline Management', body: 'Drag candidates through stages with one click.' },
   { icon: CalendarCheck, title: 'Interview Scheduling', body: 'Calendly-style booking built right in. No back-and-forth.' },
   { icon: Smartphone, title: 'Candidate Portal', body: 'Mobile-friendly application tracker candidates actually love.' },
   { icon: Users, title: 'Team Collaboration', body: 'Notes, tags, and @mentions on every candidate profile.' },
