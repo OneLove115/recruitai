@@ -208,7 +208,7 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - "By signing up you agree to our Terms and Privacy Policy"
 - "Already have an account? Sign in →"
 
-**On submit:** Create Supabase user → redirect to `/verify-email`
+**On submit:** Create Supabase user → store email in `sessionStorage` (key: `recruitai_verify_email`) → redirect to `/verify-email`
 
 ### 3.2 Email Verification (`/verify-email`)
 **Method: OTP (6-digit code)** — chosen over magic link due to reliability in corporate email environments
@@ -274,10 +274,10 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 - Role selector per invite: Admin / Recruiter / Viewer
 - "Skip for now" link
 - CTA: "Finish setup →"
-- Persistence: invites sent via `supabase.auth.admin.inviteUserByEmail()` on wizard completion; no separate `team_invites` table needed — Supabase manages pending invite state internally
+- Persistence: invites sent via a Next.js Server Action that calls `supabase.auth.admin.inviteUserByEmail()` using the service role key (cannot be called from the browser client). No separate `team_invites` table needed — Supabase manages pending invite state internally.
 
 ### Completion Screen
-- Full-screen animated confetti (lightweight CSS only)
+- Full-screen animated confetti via `canvas-confetti` npm package (~3KB gzipped)
 - Heading: "You're all set, {firstName}!"
 - Subtext: "Your workspace is ready. Let's go find some great candidates."
 - CTA: "Go to dashboard →" → `/dashboard`
