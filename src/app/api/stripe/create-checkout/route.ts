@@ -1,48 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
+import Stripe from "stripe";
 
-// Lazy-load Stripe to avoid build-time errors when env vars are missing
-function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    throw new Error("STRIPE_SECRET_KEY is not configured");
-  }
-  return new Stripe(key, {
-    apiVersion: "2026-02-25.clover" as Stripe.LatestApiVersion,
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY ?? "sk_test_placeholder", {
+    apiVersion: "2025-02-24.acacia",
   });
 }
 
-const PRICE_IDS = {
-  monthly: process.env.STRIPE_MONTHLY_PRICE_ID ?? "price_monthly_placeholder",
-  yearly: process.env.STRIPE_YEARLY_PRICE_ID ?? "price_yearly_placeholder",
-};
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { billing } = await request.json();
-    const priceId = billing === "yearly" ? PRICE_IDS.yearly : PRICE_IDS.monthly;
+    const body = await req.json();
+    const billing = body.billing as "monthly" | "yearly";
+
+    const priceId = billing === "yearly"
+      ? process.env.STRIPE_YEARLY_PRICE_ID
+      : process.env.STRIPE_MONTHLY_PRICE_ID;
+
+    if (!priceId || !process.env.STRIPE_SECRET_KEY) {
+      // Return mock URL for development without Stripe configured
+      return NextResponse.json({
+        url: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/dashboard/billing?demo=true`,
+      });
+    }
 
     const stripe = getStripe();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+    // Check if customer already exists
+    const { data: existingSub } = await supabase
+      .from("subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .single();
+
+    let customerId = existingSub?.stripe_customer_id as string | undefined;
+
+    if (!customerId) {
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { supabase_user_id: user.id },
+      });
+      customerId = customer.id;
+    }
+
     const session = await stripe.checkout.sessions.create({
+      customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
-      customer_email: user.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/pricing`,
-      metadata: {
-        user_id: user.id,
-        billing,
+      success_url: `${appUrl}/dashboard?checkout=success`,
+      cancel_url: `${appUrl}/dashboard/billing?checkout=canceled`,
+      subscription_data: {
+        trial_period_days: 14,
+        metadata: { supabase_user_id: user.id, billing_cycle: billing },
       },
       allow_promotion_codes: true,
     });
@@ -50,10 +69,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Stripe checkout error:", error);
-    const message = error instanceof Error ? error.message : "Failed to create checkout session";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }
