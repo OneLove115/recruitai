@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
   subsets: ["latin"],
+  variable: "--font-heading",
+  weight: ["400", "600", "700", "800"],
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "RecruitAI — AI-Powered Recruitment Platform",
   description:
-    "Hire smarter, faster. RecruitAI uses advanced AI to score CVs, surface hidden talent, and streamline your entire recruitment pipeline.",
+    "Stop drowning in CVs. Let AI surface your top candidates instantly.",
   keywords: "recruitment software, AI hiring, CV screening, applicant tracking",
   openGraph: {
     title: "RecruitAI — AI-Powered Recruitment Platform",
     description:
-      "Hire smarter, faster. RecruitAI uses advanced AI to score CVs, surface hidden talent, and streamline your entire recruitment pipeline.",
+      "Stop drowning in CVs. Let AI surface your top candidates instantly.",
     type: "website",
   },
 };
@@ -26,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${geist.variable} antialiased`}>{children}</body>
+    <html lang="en" className={`scroll-smooth ${manrope.variable} ${inter.variable}`}>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
