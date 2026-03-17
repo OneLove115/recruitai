@@ -154,12 +154,13 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 
 ### 2.9 Pricing
 - `bg-slate-50`, `py-24`
-- Monthly/Annual toggle (annual = 20% off badge)
+- Monthly/Annual toggle; annual pricing shown when toggled (no percentage badge — exact prices displayed)
 - 2 tiers:
-  - **Starter** — €99/mo — 1 recruiter, 5 active jobs, AI scoring, basic pipeline
-  - **Agency** — €199.99/mo — Unlimited recruiters, unlimited jobs, hidden criteria, advanced analytics, priority support
+  - **Starter** — €99/mo · €990/yr — 1 recruiter, 5 active jobs, AI scoring, basic pipeline
+  - **Agency** — €199.99/mo · €1,999/yr — Unlimited recruiters, unlimited jobs, hidden criteria, advanced analytics, priority support
 - Agency card: highlighted with indigo border + "Most Popular" badge
 - Both: amber "Start Free Trial" CTA, "No credit card required" note
+- Annual savings callout per card: Starter "Save €198/year" · Agency "Save ~€401/year"
 
 ### 2.10 FinalCTA
 - Dark gradient matching hero, `py-24`
@@ -196,12 +197,18 @@ Overlaid with subtle dot-grid pattern at `opacity-[0.06]`
 **On submit:** Create Supabase user → redirect to `/verify-email`
 
 ### 3.2 Email Verification (`/verify-email`)
+**Method: OTP (6-digit code)** — chosen over magic link due to reliability in corporate email environments
+
 - Card with envelope icon
-- Heading: "Check your inbox"
-- Body: "We sent a verification link to **{email}**. Click it to activate your account."
-- "Resend email" link (with 60s cooldown)
-- "Wrong email? Go back" link
-- On email link click: Supabase handles verification → redirect to `/onboarding`
+- Heading: "Enter your verification code"
+- Body: "We sent a 6-digit code to **{email}**. It expires in 10 minutes."
+- 6 single-character inputs (auto-focus advances on each digit entry, backspace retreats)
+- Auto-submit on 6th digit entry
+- "Resend code" link — disabled for 60s after send, shows countdown timer
+- "Wrong email? Go back" link → `/signup`
+- On valid code: verify via Supabase OTP → redirect to `/onboarding`
+- On invalid/expired code: inline error "Invalid code. Please try again." (does not clear inputs)
+- Code expiry: 10 minutes
 
 ### 3.3 Login (`/login`)
 - Email + password fields
@@ -302,10 +309,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-body', weight: ['400
 ```
 
 ### Supabase auth flow
-- Signup → `supabase.auth.signUp()` → email verification → `/onboarding`
-- Login → `supabase.auth.signInWithPassword()` → `/dashboard`
-- Password recovery → `supabase.auth.resetPasswordForEmail()` → `/reset-password`
-- Email verification redirect: configure in Supabase dashboard → Site URL + redirect to `/onboarding`
+- Signup → `supabase.auth.signUp()` → redirect to `/verify-email` (pass email in URL param or session storage)
+- Email OTP verify → `supabase.auth.verifyOtp({ email, token, type: 'signup' })` → redirect to `/onboarding`
+- Login → `supabase.auth.signInWithPassword()` → redirect to `/dashboard`
+- Password recovery → `supabase.auth.resetPasswordForEmail()` → email OTP → `/reset-password`
+- Supabase project settings: disable magic link, enable OTP; set OTP expiry to 600s (10 min)
 
 ### Onboarding data persistence
 - Store wizard state in `localStorage` during wizard (no DB writes until finish)
