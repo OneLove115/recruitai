@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Zap, CreditCard, Calendar, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 const features = [
   "Unlimited job postings",
@@ -54,6 +55,7 @@ export default function BillingPage() {
   };
 
   return (
+    <DashboardLayout>
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-100 px-8 py-4">
@@ -198,5 +200,6 @@ export default function BillingPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }
